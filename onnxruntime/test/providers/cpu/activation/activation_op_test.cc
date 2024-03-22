@@ -695,5 +695,35 @@ TEST(LeakyReluGradInferenceTest, Basic) {
 }
 #endif
 
+// Remove DNNL from running this test because DNNL Gelu op seems not check domain for kernel implementation.
+// It will run the DNNL Gelu op which only be part of standard of Gelu-20 op.
+// [TODO] Temporarily ignore this test for OpenVINO to avoid an exception due to mishandling of the
+// approximate parameter. Re-enable it later when the issue is fixed
+#if !defined(USE_DNNL) && !defined(USE_QNN) && !defined(USE_OPENVINO)
+TEST_F(ActivationOpTest, ONNX_Gelu) {
+  TestActivationOp<float>(
+      "Gelu",
+      input_values,
+      [](float x) { return 0.5 * x * (1 + erf(x * M_SQRT1_2)); }, {},
+      {{"approximate", "none"}}, true, 20);
+
+  TestActivationOp<float>(
+      "Gelu",
+      input_values,
+      [](float x) { return 0.5 * x * (1 + erf(x * M_SQRT1_2)); },
+      {},
+      {/*default value of approximate attribute is none */}, true, 20);
+
+  TestActivationOp<float>(
+      "Gelu",
+      input_values,
+      [](float x) {
+        return 0.5 * x * (1 + tanh(sqrt(2 / M_PI) * (x + 0.044715 * x * x * x)));
+      },
+      {},
+      {{"approximate", "tanh"}}, true, 20);
+}
+#endif
+
 }  // namespace test
 }  // namespace onnxruntime
